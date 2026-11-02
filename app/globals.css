@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* Force light mode by default — dark: classes only activate with .dark class on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-terracotta: #C25E40;
+  --color-terracotta-hover: #D96E4C;
+  --color-terracotta-dark: #9F462D;
+  --color-sand: #FAF7F2;
+  --color-sand-muted: #F2ECE1;
+  --color-sand-card: #FFFFFF;
+  --color-sand-border: #EADBCE;
+  --color-home-charcoal: #2D2926;
+  --color-home-muted: #78716A;
+  --color-home-sage: #4E7D5B;
+  --color-home-amber: #D97706;
+}
+
+/* Prevent iOS Safari auto-zoom on input focus */
+@media screen and (max-width: 768px) {
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Eliminate 300ms tap delay on interactive elements */
+a, button, [role="button"], summary {
+  touch-action: manipulation;
+}
+
+body {
+  background-color: #FAF7F2;
+  color: #2D2926;
+  font-feature-settings: "rlig" 1, "calt" 1;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Sarabun", "Prompt", sans-serif;
+}
+
+.dark body {
+  background-color: #171513;
+  color: #FAF7F2;
+}
+
+/* Custom Muji scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #DFD7CC; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #C25E40; }
+.dark ::-webkit-scrollbar-thumb { background: #383430; }
+
+/* Input field utility */
+.input-field {
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  background-color: #FFFFFF;
+  border: 1px solid #EADBCE;
+  border-radius: 0.875rem;
+  color: #2D2926;
+  transition: all 0.15s ease;
+  outline: none;
+}
+.input-field:focus {
+  border-color: #C25E40;
+  box-shadow: 0 0 0 3px rgba(194, 94, 64, 0.15);
+}
+.dark .input-field {
+  background-color: #24211E;
+  border-color: #3D3833;
+  color: #FAF7F2;
+}
+.dark .input-field:focus {
+  border-color: #D96E4C;
+  box-shadow: 0 0 0 3px rgba(217, 110, 76, 0.25);
+}
