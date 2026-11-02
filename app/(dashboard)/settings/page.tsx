@@ -23,7 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { QUERY_KEYS } from "@/hooks/useHomeInventory";
 
 export default function SettingsPage() {
-  const { user, firebaseUser, signInWithGoogle, logout, updateHouseholdName } = useAuth();
+  const { user, firebaseUser, loginWithGoogle, logout, updateHouseholdName, isGuest, isConfigured } = useAuth();
   const [householdInput, setHouseholdInput] = useState(user?.householdName || "บ้านสุขสันต์");
   const qc = useQueryClient();
 
@@ -56,8 +56,8 @@ export default function SettingsPage() {
       )
     ) {
       saveAllItems(INITIAL_ITEMS);
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.items });
-      qc.invalidateQueries({ queryKey: QUERY_KEYS.movements });
+      qc.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      qc.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
       toast.success("รีเซ็ตข้อมูลตัวอย่างเรียบร้อย");
     }
   }
@@ -129,7 +129,7 @@ export default function SettingsPage() {
               </button>
             ) : (
               <button
-                onClick={signInWithGoogle}
+                onClick={loginWithGoogle}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-white dark:bg-[#2A2622] text-[#2D2926] dark:text-[#FAF7F2] border border-[#EADBCE] dark:border-[#38332E] rounded-xl hover:bg-[#FAF7F2] shadow-2xs"
               >
                 <LogIn className="w-3.5 h-3.5 text-[#C25E40]" />

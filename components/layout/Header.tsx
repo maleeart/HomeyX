@@ -26,8 +26,8 @@ export function Header({ title, onMenuClick, onOpenAddItem }: HeaderProps) {
 
   function handleRefresh() {
     setSpinning(true);
-    qc.invalidateQueries({ queryKey: QUERY_KEYS.items });
-    qc.invalidateQueries({ queryKey: QUERY_KEYS.movements });
+    qc.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+    qc.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
     router.refresh();
     setTimeout(() => setSpinning(false), 800);
   }
