@@ -5,12 +5,23 @@ import { HomeyUser } from "@/types";
 import { auth, googleProvider, isFirebaseConfigured } from "@/lib/firebase";
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
 } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+
+function isMobileOrTouch(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const isTouch = "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+  const isSmallScreen = window.innerWidth <= 768;
+  return isMobileUA || Boolean(isTouch && isSmallScreen);
+}
 
 interface AuthContextType {
   user: HomeyUser | null;
@@ -68,7 +79,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // 2. Listen to real Firebase Auth
+    // 2. Check for redirect login result (mobile flow)
+    if (isFirebaseConfigured) {
+      getRedirectResult(auth)
+        .then((res) => {
+          if (res?.user) {
+            toast.success(`ยินดีต้อนรับ ${res.user.displayName || "เข้าสู่ระบบ"}!`);
+          }
+        })
+        .catch((err: any) => {
+          if (err?.code && err.code !== "auth/credential-already-in-use") {
+            console.error("Redirect sign in error:", err);
+          }
+        });
+    }
+
+    // 3. Listen to real Firebase Auth
     try {
       const unsub = onAuthStateChanged(auth, (fUser) => {
         setFirebaseUser(fUser);
@@ -101,18 +127,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Firebase not configured");
     }
 
+    const isMobile = isMobileOrTouch();
+
     try {
       setLoading(true);
+
+      // On mobile / touch screen: Use redirect for seamless in-app experience without opening new tabs/windows
+      if (isMobile) {
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+
+      // On desktop: Popup window is standard and non-disruptive
       const res = await signInWithPopup(auth, googleProvider);
       toast.success(`ยินดีต้อนรับ ${res.user.displayName || "เข้าสู่ระบบ"}!`);
     } catch (err: any) {
       console.error("Google sign in error:", err);
+      // Fallback to redirect if popup was blocked by browser
+      if (err?.code === "auth/popup-blocked" || err?.code === "auth/cancelled-popup-request") {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectErr) {
+          console.error("Fallback redirect sign in error:", redirectErr);
+        }
+      }
       if (err?.code !== "auth/popup-closed-by-user") {
         toast.error(`เข้าสู่ระบบไม่สำเร็จ: ${err?.message || err?.code}`);
       }
       throw err;
     } finally {
-      setLoading(false);
+      if (!isMobile) {
+        setLoading(false);
+      }
     }
   }
 

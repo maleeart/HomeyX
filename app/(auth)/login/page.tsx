@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,8 +18,14 @@ import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { loginWithGoogle, loginAsGuest, isConfigured } = useAuth();
+  const { user, loginWithGoogle, loginAsGuest, isConfigured, initialized } = useAuth();
   const [loadingGoogle, setLoadingGoogle] = useState(false);
+
+  useEffect(() => {
+    if (initialized && user) {
+      router.push("/dashboard");
+    }
+  }, [user, initialized, router]);
 
   async function handleGoogleLogin() {
     try {
@@ -28,7 +34,6 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch {
       // toast already shown in hook
-    } finally {
       setLoadingGoogle(false);
     }
   }
@@ -36,6 +41,17 @@ export default function LoginPage() {
   function handleGuestLogin() {
     loginAsGuest("เจ้าของบ้าน (Guest Mode)");
     router.push("/dashboard");
+  }
+
+  if (initialized && user) {
+    return (
+      <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#141210] flex flex-col justify-center items-center p-4">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#78716A] dark:text-[#A8A199]">
+          <span className="w-2 h-2 rounded-full bg-[#C25E40] animate-pulse" />
+          <span>กำลังพาเข้าสู่ระบบ...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
