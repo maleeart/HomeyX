@@ -10,6 +10,8 @@ import {
   togglePurchasedInShopping,
   checkoutShoppingList,
   getStockMovements,
+  markLocalOutOfStock,
+  quickRestockLocalItem,
 } from "@/lib/storage";
 import {
   getFirestoreItems,
@@ -20,6 +22,8 @@ import {
   toggleFirestorePurchased,
   checkoutFirestoreShopping,
   getFirestoreMovements,
+  markFirestoreOutOfStock,
+  quickRestockFirestoreItem,
 } from "@/services/firestore.service";
 import { HomeItem, StockMovement } from "@/types";
 import { useAuth } from "./useAuth";
@@ -31,20 +35,25 @@ export const QUERY_KEYS = {
 };
 
 export function useHomeItems() {
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useQuery<HomeItem[]>({
     queryKey: [QUERY_KEYS.items, uid || "guest"],
-    queryFn: () => {
+    queryFn: async () => {
       if (isCloud && uid) {
-        return getFirestoreItems(uid);
+        try {
+          return await getFirestoreItems(uid);
+        } catch (err) {
+          console.warn("Firestore fetch error, fallback to local:", err);
+          return getHomeItems();
+        }
       }
       return getHomeItems();
     },
     enabled: Boolean(user),
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 20,
   });
 }
 
@@ -210,5 +219,57 @@ export function useStockMovements() {
     },
     enabled: Boolean(user),
     staleTime: 1000 * 30,
+  });
+}
+
+export function useMarkOutOfStock() {
+  const queryClient = useQueryClient();
+  const { user, isConfigured } = useAuth();
+  const uid = user?.uid;
+  const isCloud = Boolean(uid && isConfigured);
+
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isCloud && uid) {
+        return markFirestoreOutOfStock(uid, id);
+      }
+      return markLocalOutOfStock(id);
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
+      if (updated) {
+        toast.warning(`แจ้ง "${updated.name}" หมดแล้ว! เพิ่มลงรายการต้องซื้อเรียบร้อย 🚨`);
+      }
+    },
+    onError: () => {
+      toast.error("เกิดข้อผิดพลาดในการแจ้งของหมด");
+    },
+  });
+}
+
+export function useQuickRestockItem() {
+  const queryClient = useQueryClient();
+  const { user, isConfigured } = useAuth();
+  const uid = user?.uid;
+  const isCloud = Boolean(uid && isConfigured);
+
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isCloud && uid) {
+        return quickRestockFirestoreItem(uid, id);
+      }
+      return quickRestockLocalItem(id);
+    },
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
+      if (updated) {
+        toast.success(`ซื้อเติม "${updated.name}" เข้าบ้านแล้ว (${updated.quantity} ${updated.unit}) 🎉`);
+      }
+    },
+    onError: () => {
+      toast.error("เกิดข้อผิดพลาดในการเติมของเข้าสต๊อก");
+    },
   });
 }

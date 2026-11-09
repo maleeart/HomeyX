@@ -600,6 +600,88 @@ export async function togglePurchasedInShopping(id: string, isPurchased: boolean
 }
 
 /**
+ * Quick mark item as out of stock (quantity = 0, added to shopping list)
+ */
+export async function markLocalOutOfStock(id: string): Promise<HomeItem | undefined> {
+  const items = loadItems();
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx < 0) return undefined;
+
+  const item = items[idx];
+  const oldQty = item.quantity;
+  const now = new Date().toISOString();
+  const buyQty = item.targetStockLevel || (item.minStockLevel > 0 ? item.minStockLevel + 1 : 1);
+
+  const updated: HomeItem = {
+    ...item,
+    quantity: 0,
+    isInShoppingList: true,
+    shoppingQuantity: buyQty,
+    isPurchased: false,
+    lastUsedAt: now,
+    updatedAt: now,
+  };
+
+  items[idx] = updated;
+  saveAllItems(items);
+
+  await recordMovement({
+    itemId: item.id,
+    itemCode: item.code,
+    itemName: item.name,
+    type: "consume",
+    quantityBefore: oldQty,
+    quantityChange: -oldQty,
+    quantityAfter: 0,
+    unit: item.unit,
+    reason: "แจ้งของหมดสต๊อก (พร้อมซื้อเพิ่ม)",
+  });
+
+  return updated;
+}
+
+/**
+ * Quick restock single item to target level
+ */
+export async function quickRestockLocalItem(id: string): Promise<HomeItem | undefined> {
+  const items = loadItems();
+  const idx = items.findIndex((i) => i.id === id);
+  if (idx < 0) return undefined;
+
+  const item = items[idx];
+  const oldQty = item.quantity;
+  const target = item.targetStockLevel || Math.max(1, item.minStockLevel + 1);
+  const now = new Date().toISOString();
+
+  const updated: HomeItem = {
+    ...item,
+    quantity: target,
+    isInShoppingList: false,
+    shoppingQuantity: 1,
+    isPurchased: false,
+    lastRestockedAt: now,
+    updatedAt: now,
+  };
+
+  items[idx] = updated;
+  saveAllItems(items);
+
+  await recordMovement({
+    itemId: item.id,
+    itemCode: item.code,
+    itemName: item.name,
+    type: "restock",
+    quantityBefore: oldQty,
+    quantityChange: target - oldQty,
+    quantityAfter: target,
+    unit: item.unit,
+    reason: "ซื้อเติมเข้าบ้านเสร็จสมบูรณ์",
+  });
+
+  return updated;
+}
+
+/**
  * Batch restock all purchased items from shopping list and remove them from shopping list
  */
 export async function checkoutShoppingList(): Promise<number> {

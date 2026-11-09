@@ -81,28 +81,28 @@ export default function LoginPage() {
           Homey<span className="text-[#C25E40]">X</span>
         </h1>
         <p className="text-xs font-semibold text-[#78716A] dark:text-[#A8A199] mt-1">
-          เช็คสต๊อกของใช้ในบ้าน ไม่พลาด ไม่ซื้อซ้ำ
+          เรดาร์ของหมด &amp; เช็คลิสต์ก่อนซื้อของเข้าบ้าน
         </p>
 
         {/* Features highlight pills */}
         <div className="my-6 grid grid-cols-2 gap-2 text-left">
           <div className="p-2.5 rounded-xl bg-[#FAF7F2] dark:bg-[#262320] border border-[#EADBCE] dark:border-[#332E2A]">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-[#C25E40]">
-              <Boxes className="w-3.5 h-3.5" />
-              <span>สต๊อกแยกบัญชี</span>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600">
+              <AlertCircle className="w-3.5 h-3.5" />
+              <span>เรดาร์ของหมด</span>
             </div>
             <p className="text-[10px] text-[#78716A] dark:text-[#A8A199] mt-0.5">
-              ข้อมูลแยกของใครของมัน ปลอดภัย
+              เปิดดูเฉพาะตอนจะไปซื้อของเพิ่ม
             </p>
           </div>
 
           <div className="p-2.5 rounded-xl bg-[#FAF7F2] dark:bg-[#262320] border border-[#EADBCE] dark:border-[#332E2A]">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[#4E7D5B]">
-              <ShoppingCart className="w-3.5 h-3.5" />
-              <span>ช้อปปิ้งสมาร์ท</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>ฐานข้อมูลออนไลน์</span>
             </div>
             <p className="text-[10px] text-[#78716A] dark:text-[#A8A199] mt-0.5">
-              รวมของหมดอัตโนมัติ ส่ง LINE ได้
+              ซิงค์ Cloud Firestore เรียลไทม์
             </p>
           </div>
         </div>
@@ -136,13 +136,13 @@ export default function LoginPage() {
             <span>{loadingGoogle ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบด้วย Google"}</span>
           </button>
 
-          {/* Guest Mode Fallback */}
+          {/* Quick Start / Guest */}
           <button
             onClick={handleGuestLogin}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#78716A] dark:text-[#A8A199] hover:bg-[#FAF7F2] dark:hover:bg-[#262320] transition-colors"
           >
             <UserCheck className="w-3.5 h-3.5 text-[#C25E40]" />
-            <span>ทดลองใช้งานในโหมดผู้เยี่ยมชม (Guest Mode)</span>
+            <span>เข้าใช้งานทันที (เชื่อมต่อ Cloud Database)</span>
           </button>
         </div>
 

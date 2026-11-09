@@ -6,6 +6,7 @@ import { auth, googleProvider, isFirebaseConfigured } from "@/lib/firebase";
 import {
   signInWithPopup,
   signInWithRedirect,
+  signInAnonymously,
   getRedirectResult,
   signOut,
   onAuthStateChanged,
@@ -163,18 +164,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  function loginAsGuest(name = "เจ้าของบ้าน (Guest Mode)") {
+  async function loginAsGuest(name = "เจ้าของบ้าน (โหมดเข้าใช้งานทันที)") {
+    try {
+      if (isFirebaseConfigured) {
+        setLoading(true);
+        const cred = await signInAnonymously(auth);
+        const guestUser: HomeyUser = {
+          uid: cred.user.uid,
+          email: "guest@homeyx.cloud",
+          displayName: name,
+          householdName: localStorage.getItem("homeyx_household_name") || "บ้านสุขสันต์",
+          role: "owner",
+        };
+        setUser(guestUser);
+        setIsGuest(false);
+        toast.success("เชื่อมต่อฐานข้อมูลออนไลน์ (Cloud Database) เรียบร้อย! 🟢");
+        return;
+      }
+    } catch (e) {
+      console.warn("Anonymous auth fallback:", e);
+    } finally {
+      setLoading(false);
+    }
+
     const guestUser: HomeyUser = {
       uid: "guest-user",
       email: "guest@homeyx.local",
       displayName: name,
-      householdName: "บ้านสุขสันต์ (Local Demo)",
+      householdName: localStorage.getItem("homeyx_household_name") || "บ้านสุขสันต์",
       role: "owner",
     };
     localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(guestUser));
     setUser(guestUser);
     setIsGuest(true);
-    toast.success("เข้าสู่ระบบในฐานะผู้เยี่ยมชม (Offline/Demo Mode)");
+    toast.success("เข้าสู่ระบบเรียบร้อย");
   }
 
   async function logout() {

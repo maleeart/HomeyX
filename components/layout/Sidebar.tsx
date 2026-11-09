@@ -41,27 +41,33 @@ export function Sidebar({ collapsed = false, onToggle, onItemClick }: SidebarPro
   const { user, logout } = useAuth();
   const { data: items = [] } = useHomeItems();
 
+  const outOfStockCount = items.filter((i) => i.quantity <= 0).length;
   const toBuyCount = items.filter(
-    (i) => i.isInShoppingList || i.quantity <= i.minStockLevel
+    (i) => i.quantity <= 0 || i.isInShoppingList || i.quantity <= i.minStockLevel
   ).length;
 
   const navItems: NavItem[] = [
-    { label: "หน้าหลัก", href: "/dashboard", icon: LayoutDashboard, section: "หลัก" },
-    { label: "สต๊อกของใช้", href: "/inventory", icon: Boxes, section: "หลัก" },
     {
-      label: "รายการต้องซื้อ",
+      label: "เรดาร์ของหมด & เตรียมซื้อ",
+      href: "/dashboard",
+      icon: LayoutDashboard,
+      section: "หลัก",
+      badge: outOfStockCount > 0 ? outOfStockCount : undefined,
+    },
+    {
+      label: "โหมดเดินซื้อของ",
       href: "/shopping",
       icon: ShoppingCart,
       section: "หลัก",
       badge: toBuyCount > 0 ? toBuyCount : undefined,
     },
-    { label: "สแกนบาร์โค้ด / QR", href: "/scan", icon: ScanLine, section: "หลัก" },
-    { label: "เช็คสต๊อกตามห้อง", href: "/audit", icon: CheckSquare, section: "จัดการ" },
-    { label: "ประวัติการใช้ & เติม", href: "/history", icon: History, section: "จัดการ" },
-    { label: "ตั้งค่าโซนบ้าน & หน่วย", href: "/settings", icon: Settings, section: "ระบบ" },
+    { label: "ของทั้งหมดในบ้าน", href: "/inventory", icon: Boxes, section: "คลังของ" },
+    { label: "สแกนบาร์โค้ด / QR", href: "/scan", icon: ScanLine, section: "คลังของ" },
+    { label: "ประวัติการซื้อ & เติม", href: "/history", icon: History, section: "ระบบ" },
+    { label: "ตั้งค่า & ฐานข้อมูล", href: "/settings", icon: Settings, section: "ระบบ" },
   ];
 
-  const sections = ["หลัก", "จัดการ", "ระบบ"];
+  const sections = ["หลัก", "คลังของ", "ระบบ"];
 
   return (
     <aside
@@ -88,7 +94,7 @@ export function Sidebar({ collapsed = false, onToggle, onItemClick }: SidebarPro
               </span>
             </div>
             <p className="text-[10px] font-medium text-[#78716A] dark:text-[#A8A199] tracking-wider mt-1 truncate">
-              เช็คสต๊อกของใช้ ไม่ซื้อซ้ำ
+              เรดาร์ของหมด &amp; เช็คก่อนซื้อ
             </p>
           </div>
         )}

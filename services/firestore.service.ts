@@ -224,6 +224,92 @@ export async function toggleFirestorePurchased(
 }
 
 /**
+ * Mark item as out of stock (quantity = 0, added to shopping list)
+ */
+export async function markFirestoreOutOfStock(
+  uid: string,
+  itemId: string
+): Promise<HomeItem | undefined> {
+  const ref = doc(db, "users", uid, "items", itemId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return undefined;
+
+  const item = snap.data() as HomeItem;
+  const oldQty = item.quantity;
+  const now = new Date().toISOString();
+  const buyQty = item.targetStockLevel || (item.minStockLevel > 0 ? item.minStockLevel + 1 : 1);
+
+  const updated: HomeItem = {
+    ...item,
+    quantity: 0,
+    isInShoppingList: true,
+    shoppingQuantity: buyQty,
+    isPurchased: false,
+    lastUsedAt: now,
+    updatedAt: now,
+  };
+
+  await setDoc(ref, updated, { merge: true });
+
+  await recordFirestoreMovement(uid, {
+    itemId: item.id,
+    itemCode: item.code,
+    itemName: item.name,
+    type: "consume",
+    quantityBefore: oldQty,
+    quantityChange: -oldQty,
+    quantityAfter: 0,
+    unit: item.unit,
+    reason: "แจ้งของหมดสต๊อก (พร้อมซื้อเพิ่ม)",
+  });
+
+  return updated;
+}
+
+/**
+ * Quick restock single item to target quantity
+ */
+export async function quickRestockFirestoreItem(
+  uid: string,
+  itemId: string
+): Promise<HomeItem | undefined> {
+  const ref = doc(db, "users", uid, "items", itemId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return undefined;
+
+  const item = snap.data() as HomeItem;
+  const oldQty = item.quantity;
+  const target = item.targetStockLevel || Math.max(1, item.minStockLevel + 1);
+  const now = new Date().toISOString();
+
+  const updated: HomeItem = {
+    ...item,
+    quantity: target,
+    isInShoppingList: false,
+    shoppingQuantity: 1,
+    isPurchased: false,
+    lastRestockedAt: now,
+    updatedAt: now,
+  };
+
+  await setDoc(ref, updated, { merge: true });
+
+  await recordFirestoreMovement(uid, {
+    itemId: item.id,
+    itemCode: item.code,
+    itemName: item.name,
+    type: "restock",
+    quantityBefore: oldQty,
+    quantityChange: target - oldQty,
+    quantityAfter: target,
+    unit: item.unit,
+    reason: "ซื้อเติมเข้าบ้านเสร็จสมบูรณ์",
+  });
+
+  return updated;
+}
+
+/**
  * Checkout shopping list: Restock all purchased items
  */
 export async function checkoutFirestoreShopping(uid: string): Promise<number> {

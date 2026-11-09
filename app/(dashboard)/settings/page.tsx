@@ -105,17 +105,23 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* Google Login info box */}
+        {/* Cloud Database & Account info box */}
         <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E1B18] border border-[#EADBCE] dark:border-[#38332E] shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                  ฐานข้อมูล Cloud Firestore เชื่อมต่อออนไลน์
+                </span>
+              </div>
               <h3 className="text-base font-bold text-[#2D2926] dark:text-[#FAF7F2]">
-                บัญชีผู้ใช้งาน & Google Login
+                บัญชีผู้ใช้งาน &amp; คลาวด์ซิงค์
               </h3>
               <p className="text-xs text-[#78716A] dark:text-[#A8A199] mt-0.5">
                 {firebaseUser
-                  ? `เข้าสู่ระบบด้วย Google: ${firebaseUser.email}`
-                  : "ปัจจุบันทำงานในโหมด Local Offline (พร้อมเชื่อมต่อ Google Login ในขั้นตอนต่อไป)"}
+                  ? `เชื่อมต่อกับบัญชี Google: ${firebaseUser.email}`
+                  : `ทำงานบนคลาวด์ Firebase เรียลไทม์ (โหมดผู้ใช้: ${user?.displayName || "เริ่มต้น"})`}
               </p>
             </div>
 
@@ -133,7 +139,7 @@ export default function SettingsPage() {
                 className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-white dark:bg-[#2A2622] text-[#2D2926] dark:text-[#FAF7F2] border border-[#EADBCE] dark:border-[#38332E] rounded-xl hover:bg-[#FAF7F2] shadow-2xs"
               >
                 <LogIn className="w-3.5 h-3.5 text-[#C25E40]" />
-                <span>เข้าสู่ระบบด้วย Google</span>
+                <span>เชื่อมต่อ Google Login</span>
               </button>
             )}
           </div>

@@ -37,11 +37,19 @@ export default function ShoppingPage() {
 
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
 
-  // Items in shopping list
+  // Items in shopping list (sorted: unpurchased first, out-of-stock 0 qty first)
   const shoppingItems = useMemo(() => {
-    return items.filter(
-      (item) => item.isInShoppingList || item.quantity <= item.minStockLevel
+    const list = items.filter(
+      (item) => item.quantity <= 0 || item.isInShoppingList || item.quantity <= item.minStockLevel
     );
+    return [...list].sort((a, b) => {
+      if (Boolean(a.isPurchased) !== Boolean(b.isPurchased)) {
+        return a.isPurchased ? 1 : -1;
+      }
+      if (a.quantity <= 0 && b.quantity > 0) return -1;
+      if (b.quantity <= 0 && a.quantity > 0) return 1;
+      return 0;
+    });
   }, [items]);
 
   // Filtered by room
