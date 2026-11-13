@@ -33,9 +33,18 @@ function userMovementsCol(uid: string) {
  * Initialize default items for brand new user
  */
 export async function seedNewUserIfEmpty(uid: string): Promise<HomeItem[]> {
+  const userDocRef = doc(db, "users", uid);
+  const userDocSnap = await getDoc(userDocRef);
+
+  // If user metadata document exists and already marked as initialized, do NOT re-seed when empty!
+  if (userDocSnap.exists() && userDocSnap.data()?.initialized) {
+    return [];
+  }
+
   const col = userItemsCol(uid);
   const snap = await getDocs(col);
   if (!snap.empty) {
+    await setDoc(userDocRef, { initialized: true, updatedAt: new Date().toISOString() }, { merge: true });
     return snap.docs.map((d) => ({ ...d.data(), id: d.id } as HomeItem));
   }
 
@@ -53,6 +62,9 @@ export async function seedNewUserIfEmpty(uid: string): Promise<HomeItem[]> {
     batch.set(itemRef, itemData);
     seeded.push(itemData);
   }
+
+  // Mark user as initialized so deleting items will never re-seed them!
+  batch.set(userDocRef, { initialized: true, createdAt: new Date().toISOString() }, { merge: true });
 
   await batch.commit();
   return seeded;
@@ -132,6 +144,9 @@ export async function saveFirestoreItem(
 export async function deleteFirestoreItem(uid: string, itemId: string): Promise<boolean> {
   const ref = doc(db, "users", uid, "items", itemId);
   await deleteDoc(ref);
+  // Ensure user doc records that this user has taken actions and is initialized
+  const userDocRef = doc(db, "users", uid);
+  await setDoc(userDocRef, { initialized: true, updatedAt: new Date().toISOString() }, { merge: true });
   return true;
 }
 

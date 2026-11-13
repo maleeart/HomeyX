@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Package, Plus, Sparkles, Barcode } from "lucide-react";
+import { X, Package, Plus, Sparkles, Barcode, Trash2 } from "lucide-react";
 import { HomeItem, RoomCategory } from "@/types";
 import { HOME_CATEGORIES, DEFAULT_UNITS, DEFAULT_LOCATIONS } from "@/lib/constants";
 import { generateItemCode } from "@/lib/utils";
-import { useHomeItems, useSaveHomeItem } from "@/hooks/useHomeInventory";
+import { useHomeItems, useSaveHomeItem, useDeleteHomeItem } from "@/hooks/useHomeInventory";
 
 interface AddItemModalProps {
   open: boolean;
@@ -16,6 +16,7 @@ interface AddItemModalProps {
 export function AddItemModal({ open, onClose, initialItem }: AddItemModalProps) {
   const { data: items = [] } = useHomeItems();
   const saveMut = useSaveHomeItem();
+  const deleteMut = useDeleteHomeItem();
 
   const [categoryId, setCategoryId] = useState<RoomCategory>("kitchen");
   const [name, setName] = useState("");
@@ -378,21 +379,41 @@ export function AddItemModal({ open, onClose, initialItem }: AddItemModalProps) 
           </div>
 
           {/* Submit Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2 border-t border-[#EADBCE] dark:border-[#332E2A]">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-[#78716A] dark:text-[#A8A199] hover:bg-[#F2ECE1] dark:hover:bg-[#2A2622] rounded-xl transition-colors"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="submit"
-              disabled={saveMut.isPending}
-              className="px-5 py-2 text-xs font-bold bg-[#C25E40] hover:bg-[#D96E4C] text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50"
-            >
-              {saveMut.isPending ? "กำลังบันทึก..." : initialItem ? "บันทึกการแก้ไข" : "เพิ่มของใช้"}
-            </button>
+          <div className="pt-2 flex items-center justify-between gap-2 border-t border-[#EADBCE] dark:border-[#332E2A]">
+            {initialItem ? (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirm(`คุณต้องการลบ "${initialItem.name}" ออกจากระบบใช่หรือไม่?`)) {
+                    await deleteMut.mutateAsync(initialItem.id);
+                    onClose();
+                  }
+                }}
+                disabled={deleteMut.isPending}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleteMut.isPending ? "กำลังลบ..." : "ลบรายการนี้"}</span>
+              </button>
+            ) : (
+              <div />
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-medium text-[#78716A] dark:text-[#A8A199] hover:bg-[#F2ECE1] dark:hover:bg-[#2A2622] rounded-xl transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                disabled={saveMut.isPending}
+                className="px-5 py-2 text-xs font-bold bg-[#C25E40] hover:bg-[#D96E4C] text-white rounded-xl shadow-sm transition-all active:scale-95 disabled:opacity-50"
+              >
+                {saveMut.isPending ? "กำลังบันทึก..." : initialItem ? "บันทึกการแก้ไข" : "เพิ่มของใช้"}
+              </button>
+            </div>
           </div>
         </form>
       </div>

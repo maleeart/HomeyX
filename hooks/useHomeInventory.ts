@@ -59,20 +59,22 @@ export function useHomeItems() {
 
 export function useSaveHomeItem() {
   const queryClient = useQueryClient();
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: (data: Omit<HomeItem, "id" | "createdAt" | "updatedAt"> & { id?: string }) => {
+    mutationFn: async (data: Omit<HomeItem, "id" | "createdAt" | "updatedAt"> & { id?: string }) => {
       if (isCloud && uid) {
-        return saveFirestoreItem(uid, data);
+        const saved = await saveFirestoreItem(uid, data);
+        await saveHomeItem({ ...data, id: saved.id });
+        return saved;
       }
       return saveHomeItem(data);
     },
     onSuccess: (saved) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items, uid || "guest"] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements, uid || "guest"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
       toast.success(`บันทึก "${saved.name}" สำเร็จ`);
     },
     onError: (err) => {
@@ -84,43 +86,67 @@ export function useSaveHomeItem() {
 
 export function useDeleteHomeItem() {
   const queryClient = useQueryClient();
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: (id: string) => {
+    mutationFn: async (id: string) => {
+      // 1. Delete online from Firestore if connected
       if (isCloud && uid) {
-        return deleteFirestoreItem(uid, id);
+        await deleteFirestoreItem(uid, id);
       }
-      return deleteHomeItem(id);
+      // 2. Also delete from local storage cache
+      await deleteHomeItem(id);
+      return id;
+    },
+    // Optimistic Update: Instantly remove item from UI with 0 delay!
+    onMutate: async (deletedId: string) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.items] });
+      const previousItems = queryClient.getQueryData<HomeItem[]>([QUERY_KEYS.items, uid || "guest"]);
+
+      // Update all queries matching QUERY_KEYS.items
+      queryClient.setQueriesData<HomeItem[]>({ queryKey: [QUERY_KEYS.items] }, (old) => {
+        return old ? old.filter((item) => item.id !== deletedId) : [];
+      });
+
+      return { previousItems };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items, uid || "guest"] });
       toast.success("ลบรายการของใช้แล้ว");
     },
-    onError: () => {
-      toast.error("ไม่สามารถลบรายการได้");
+    onError: (err, deletedId, context) => {
+      console.error("Delete error:", err);
+      if (context?.previousItems) {
+        queryClient.setQueriesData({ queryKey: [QUERY_KEYS.items] }, context.previousItems);
+      }
+      toast.error("ไม่สามารถลบรายการได้ กรุณาลองใหม่");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
     },
   });
 }
 
 export function useAdjustStock() {
   const queryClient = useQueryClient();
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: ({ id, delta, reason }: { id: string; delta: number; reason?: string }) => {
+    mutationFn: async ({ id, delta, reason }: { id: string; delta: number; reason?: string }) => {
       if (isCloud && uid) {
-        return adjustFirestoreStock(uid, id, delta, reason);
+        const updated = await adjustFirestoreStock(uid, id, delta, reason);
+        await adjustItemStock(id, delta, reason);
+        return updated;
       }
       return adjustItemStock(id, delta, reason);
     },
     onSuccess: (updated, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items, uid || "guest"] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements, uid || "guest"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
       if (updated) {
         if (vars.delta > 0) {
           toast.success(`เติม "${updated.name}" +${vars.delta} ${updated.unit} (คงเหลือ ${updated.quantity})`);
@@ -137,19 +163,21 @@ export function useAdjustStock() {
 
 export function useToggleShoppingList() {
   const queryClient = useQueryClient();
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: ({ id, inList, quantity }: { id: string; inList: boolean; quantity?: number }) => {
+    mutationFn: async ({ id, inList, quantity }: { id: string; inList: boolean; quantity?: number }) => {
       if (isCloud && uid) {
-        return toggleFirestoreShopping(uid, id, inList, quantity);
+        const updated = await toggleFirestoreShopping(uid, id, inList, quantity);
+        await toggleShoppingList(id, inList, quantity);
+        return updated;
       }
       return toggleShoppingList(id, inList, quantity);
     },
     onSuccess: (updated, vars) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items, uid || "guest"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
       if (updated) {
         if (vars.inList) {
           toast.success(`เพิ่ม "${updated.name}" ลงในรายการต้องซื้อแล้ว`);
@@ -163,39 +191,43 @@ export function useToggleShoppingList() {
 
 export function useTogglePurchased() {
   const queryClient = useQueryClient();
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: ({ id, isPurchased }: { id: string; isPurchased: boolean }) => {
+    mutationFn: async ({ id, isPurchased }: { id: string; isPurchased: boolean }) => {
       if (isCloud && uid) {
-        return toggleFirestorePurchased(uid, id, isPurchased);
+        const updated = await toggleFirestorePurchased(uid, id, isPurchased);
+        await togglePurchasedInShopping(id, isPurchased);
+        return updated;
       }
       return togglePurchasedInShopping(id, isPurchased);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items, uid || "guest"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
     },
   });
 }
 
 export function useCheckoutShoppingList() {
   const queryClient = useQueryClient();
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (isCloud && uid) {
-        return checkoutFirestoreShopping(uid);
+        const count = await checkoutFirestoreShopping(uid);
+        await checkoutShoppingList();
+        return count;
       }
       return checkoutShoppingList();
     },
     onSuccess: (count) => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items, uid || "guest"] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements, uid || "guest"] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.items] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.movements] });
       toast.success(`เติมของเข้าบ้านแล้ว ${count} รายการ เรียบร้อย! 🎉`);
     },
     onError: () => {
@@ -205,9 +237,9 @@ export function useCheckoutShoppingList() {
 }
 
 export function useStockMovements() {
-  const { user, isGuest, isConfigured } = useAuth();
+  const { user, isConfigured } = useAuth();
   const uid = user?.uid;
-  const isCloud = Boolean(uid && !isGuest && isConfigured);
+  const isCloud = Boolean(uid && isConfigured);
 
   return useQuery<StockMovement[]>({
     queryKey: [QUERY_KEYS.movements, uid || "guest"],
@@ -218,7 +250,7 @@ export function useStockMovements() {
       return getStockMovements();
     },
     enabled: Boolean(user),
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 20,
   });
 }
 
@@ -229,9 +261,11 @@ export function useMarkOutOfStock() {
   const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: (id: string) => {
+    mutationFn: async (id: string) => {
       if (isCloud && uid) {
-        return markFirestoreOutOfStock(uid, id);
+        const updated = await markFirestoreOutOfStock(uid, id);
+        await markLocalOutOfStock(id);
+        return updated;
       }
       return markLocalOutOfStock(id);
     },
@@ -255,9 +289,11 @@ export function useQuickRestockItem() {
   const isCloud = Boolean(uid && isConfigured);
 
   return useMutation({
-    mutationFn: (id: string) => {
+    mutationFn: async (id: string) => {
       if (isCloud && uid) {
-        return quickRestockFirestoreItem(uid, id);
+        const updated = await quickRestockFirestoreItem(uid, id);
+        await quickRestockLocalItem(id);
+        return updated;
       }
       return quickRestockLocalItem(id);
     },
