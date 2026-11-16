@@ -86,6 +86,19 @@ export async function getFirestoreItems(uid: string): Promise<HomeItem[]> {
 }
 
 /**
+ * Helper to strip undefined values so Firestore setDoc never throws Unsupported field value: undefined
+ */
+export function cleanFirestoreData<T extends Record<string, any>>(obj: T): T {
+  const clean: any = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) {
+      clean[k] = v;
+    }
+  }
+  return clean;
+}
+
+/**
  * Save / Create item for specific user
  */
 export async function saveFirestoreItem(
@@ -100,12 +113,12 @@ export async function saveFirestoreItem(
     const prevSnap = await getDoc(ref);
     const prev = prevSnap.data() as HomeItem | undefined;
 
-    const updated: HomeItem = {
+    const updated = cleanFirestoreData({
       ...(prev || {}),
       ...itemData,
       id: itemData.id,
       updatedAt: now,
-    } as HomeItem;
+    }) as HomeItem;
 
     await setDoc(ref, updated, { merge: true });
     return updated;
@@ -113,27 +126,31 @@ export async function saveFirestoreItem(
 
   // Create new doc
   const newRef = doc(col);
-  const newItem: HomeItem = {
+  const newItem = cleanFirestoreData({
     ...itemData,
     id: newRef.id,
     createdAt: now,
     updatedAt: now,
-  };
+  }) as HomeItem;
 
   await setDoc(newRef, newItem);
 
-  // Log creation movement
-  await recordFirestoreMovement(uid, {
-    itemId: newItem.id,
-    itemCode: newItem.code,
-    itemName: newItem.name,
-    type: "initial",
-    quantityBefore: 0,
-    quantityChange: newItem.quantity,
-    quantityAfter: newItem.quantity,
-    unit: newItem.unit,
-    reason: "เพิ่มของใช้ใหม่เข้าระบบ",
-  });
+  // Log creation movement safely
+  try {
+    await recordFirestoreMovement(uid, cleanFirestoreData({
+      itemId: newItem.id,
+      itemCode: newItem.code || "ITM-0001",
+      itemName: newItem.name,
+      type: "initial",
+      quantityBefore: 0,
+      quantityChange: newItem.quantity || 1,
+      quantityAfter: newItem.quantity || 1,
+      unit: newItem.unit || "ชิ้น",
+      reason: "เพิ่มของใช้ใหม่เข้าระบบ",
+    }));
+  } catch (err) {
+    console.warn("Movement logging warning:", err);
+  }
 
   return newItem;
 }

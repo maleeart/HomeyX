@@ -66,9 +66,14 @@ export function useSaveHomeItem() {
   return useMutation({
     mutationFn: async (data: Omit<HomeItem, "id" | "createdAt" | "updatedAt"> & { id?: string }) => {
       if (isCloud && uid) {
-        const saved = await saveFirestoreItem(uid, data);
-        await saveHomeItem({ ...data, id: saved.id });
-        return saved;
+        try {
+          const saved = await saveFirestoreItem(uid, data);
+          await saveHomeItem({ ...data, id: saved.id });
+          return saved;
+        } catch (err) {
+          console.error("Firestore save error, fallback to local:", err);
+          return await saveHomeItem(data);
+        }
       }
       return saveHomeItem(data);
     },
