@@ -1,7 +1,7 @@
 "use client";
 
-import { Menu, ScanLine, Plus, RefreshCw, Home, Search, Heart, User, ShoppingCart, Cloud } from "lucide-react";
-import { useState } from "react";
+import { Menu, ScanLine, Plus, RefreshCw, Home, ShoppingCart, Maximize2, Minimize2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,11 +19,23 @@ interface HeaderProps {
 export function Header({ title, onMenuClick, onOpenAddItem }: HeaderProps) {
   const { user } = useAuth();
   const [spinning, setSpinning] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [canFullscreen, setCanFullscreen] = useState(false);
+
   const router = useRouter();
   const pathname = usePathname();
   const onDashboard = pathname === "/dashboard";
   const qc = useQueryClient();
   const { data: items = [] } = useHomeItems();
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      setCanFullscreen(Boolean(document.fullscreenEnabled));
+      const handler = () => setIsFullscreen(Boolean(document.fullscreenElement));
+      document.addEventListener("fullscreenchange", handler);
+      return () => document.removeEventListener("fullscreenchange", handler);
+    }
+  }, []);
 
   const toBuyCount = items.filter(
     (i) => i.quantity <= 0 || i.isInShoppingList || i.quantity <= i.minStockLevel
@@ -37,8 +49,24 @@ export function Header({ title, onMenuClick, onOpenAddItem }: HeaderProps) {
     setTimeout(() => setSpinning(false), 800);
   }
 
+  async function toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle error:", err);
+    }
+  }
+
   return (
-    <header className="h-16 bg-[#FCFAF7]/90 dark:bg-[#1A1816]/90 backdrop-blur-md border-b border-[#EADBCE] dark:border-[#332E2A] flex items-center px-4 gap-3 shrink-0 z-20 sticky top-0">
+    <header className="pt-[env(safe-area-inset-top,0px)] min-h-[calc(4rem+env(safe-area-inset-top,0px))] bg-[#FCFAF7]/95 dark:bg-[#1A1816]/95 backdrop-blur-md border-b border-[#EADBCE] dark:border-[#332E2A] flex items-center px-4 gap-3 shrink-0 z-20 sticky top-0 transition-all">
       {/* Mobile drawer toggle button */}
       <button
         onClick={onMenuClick}
@@ -107,6 +135,21 @@ export function Header({ title, onMenuClick, onOpenAddItem }: HeaderProps) {
             className="p-2 rounded-xl bg-[#F2ECE1] dark:bg-[#2A2622] hover:bg-[#EADBCE] dark:hover:bg-[#38332E] text-[#544E48] dark:text-[#C5BFB8] transition-colors active:scale-95 hidden sm:flex"
           >
             <Home className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Fullscreen Toggle Button (For Android & Desktop) */}
+        {canFullscreen && (
+          <button
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "ออกจากโหมดเต็มจอ" : "เปิดโหมดเต็มจอ (Fullscreen)"}
+            className="p-2 rounded-xl bg-[#F2ECE1] dark:bg-[#2A2622] hover:bg-[#EADBCE] dark:hover:bg-[#38332E] text-[#544E48] dark:text-[#C5BFB8] transition-colors active:scale-95"
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4 text-[#C25E40]" />
+            ) : (
+              <Maximize2 className="w-4 h-4 text-[#C25E40]" />
+            )}
           </button>
         )}
 

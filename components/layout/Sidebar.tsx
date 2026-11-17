@@ -72,7 +72,7 @@ export function Sidebar({ collapsed = false, onToggle, onItemClick }: SidebarPro
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen bg-[#FCFAF7] dark:bg-[#1A1816] border-r border-[#EADBCE] dark:border-[#332E2A] transition-all duration-300 relative shrink-0 z-30",
+        "flex flex-col h-[100dvh] pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)] bg-[#FCFAF7] dark:bg-[#1A1816] border-r border-[#EADBCE] dark:border-[#332E2A] transition-all duration-300 relative shrink-0 z-30",
         collapsed ? "w-18" : "w-64"
       )}
     >

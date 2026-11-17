@@ -40,6 +40,12 @@ a, button, [role="button"], summary {
   touch-action: manipulation;
 }
 
+html, body {
+  height: 100%;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background-color: #FAF7F2;
   color: #2D2926;

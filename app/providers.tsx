@@ -1,7 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "sonner";
 
@@ -17,6 +17,17 @@ export function Providers({ children }: { children: ReactNode }) {
         },
       })
   );
+
+  useEffect(() => {
+    // Register PWA service worker for full standalone capability
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch((err) => {
+          console.warn("ServiceWorker registration failed:", err);
+        });
+      });
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

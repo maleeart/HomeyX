@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { AddItemModal } from "@/components/inventory/AddItemModal";
-import { Menu, Plus } from "lucide-react";
+import { MobileFullscreenPrompt } from "./MobileFullscreenPrompt";
+import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AppShellProps {
@@ -18,7 +19,7 @@ export function AppShell({ children, title }: AppShellProps) {
   const [showAddModal, setShowAddModal] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#FAF7F2] dark:bg-[#141210]">
+    <div className="flex h-[100dvh] overflow-hidden bg-[#FAF7F2] dark:bg-[#141210]">
       {/* Mobile Backdrop Scrim */}
       {mobileDrawerOpen && (
         <div
@@ -52,26 +53,29 @@ export function AppShell({ children, title }: AppShellProps) {
           onMenuClick={() => setMobileDrawerOpen(true)}
           onOpenAddItem={() => setShowAddModal(true)}
         />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 max-w-7xl mx-auto pb-24 lg:pb-8">{children}</div>
+        <main className="flex-1 overflow-y-auto overscroll-contain">
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto pb-28 lg:pb-8">{children}</div>
         </main>
       </div>
 
-      {/* 4. Ergonomic Hamburger FAB (Mobile Only, Thumb-Zone Anchored Bottom-Left) */}
+      {/* 4. Ergonomic Hamburger FAB (Mobile Only, Thumb-Zone Anchored Bottom-Left with Safe Area) */}
       <button
         onClick={() => setMobileDrawerOpen((o) => !o)}
         aria-label="เมนูหลัก"
         className={cn(
-          "fixed bottom-6 left-6 z-40 lg:hidden",
-          "w-13 h-13 rounded-2xl bg-[#C25E40] text-white shadow-lg shadow-[#C25E40]/30",
+          "fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] left-5 z-40 lg:hidden",
+          "w-12 h-12 rounded-2xl bg-[#C25E40] text-white shadow-lg shadow-[#C25E40]/30",
           "flex items-center justify-center hover:bg-[#D96E4C] active:scale-95 transition-all"
         )}
       >
-        <Menu className="w-6 h-6" />
+        <Menu className="w-5 h-5" />
       </button>
 
       {/* Add Item Modal */}
       <AddItemModal open={showAddModal} onClose={() => setShowAddModal(false)} />
+
+      {/* Mobile Fullscreen & PWA Install Helper */}
+      <MobileFullscreenPrompt />
     </div>
   );
 }

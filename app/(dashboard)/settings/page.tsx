@@ -13,6 +13,8 @@ import {
   LogOut,
   LogIn,
   Check,
+  Smartphone,
+  Maximize2,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useAuth } from "@/hooks/useAuth";
@@ -182,6 +184,47 @@ export default function SettingsPage() {
                 {u}
               </span>
             ))}
+          </div>
+        </div>
+
+        {/* Fullscreen & Mobile App Installation Card */}
+        <div className="p-5 sm:p-6 rounded-3xl bg-white dark:bg-[#1E1B18] border border-[#EADBCE] dark:border-[#38332E] shadow-xs">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#FDF4F0] dark:bg-[#2C1F1B] flex items-center justify-center text-[#C25E40]">
+              <Smartphone className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-[#2D2926] dark:text-[#FAF7F2]">
+                แสดงผลแบบเต็มจอ (Fullscreen Mobile App)
+              </h2>
+              <p className="text-xs text-[#78716A] dark:text-[#A8A199]">
+                ซ่อนแถบเบราว์เซอร์ ใช้งานได้เต็มหน้าจอเหมือนแอพแท้
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-xs text-[#544E48] dark:text-[#C5BFB8]">
+            <div className="p-3.5 rounded-2xl bg-[#FAF7F2] dark:bg-[#25201C] border border-[#EADBCE] dark:border-[#38332E] space-y-2">
+              <p className="font-bold text-[#2D2926] dark:text-[#FAF7F2] flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-[#C25E40] text-white flex items-center justify-center text-[10px]">🍎</span>
+                สำหรับ iPhone / iPad (Safari):
+              </p>
+              <p className="pl-6 text-[#78716A] dark:text-[#A8A199] leading-relaxed">
+                1. แตะปุ่มแชร์ <strong>[ ⎋ ]</strong> ที่แถบล่างสุดของ Safari<br />
+                2. เลือก <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong><br />
+                3. กด <strong>"เพิ่ม" (Add)</strong> มุมขวาบน แล้วเปิดผ่านไอคอน HomeyX บนหน้าจอมือถือ จะแสดงผลเต็มจอ 100% ไม่มีแถบเว็บ
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#FAF7F2] dark:bg-[#25201C] border border-[#EADBCE] dark:border-[#38332E] space-y-2">
+              <p className="font-bold text-[#2D2926] dark:text-[#FAF7F2] flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">🤖</span>
+                สำหรับ Android (Chrome):
+              </p>
+              <p className="pl-6 text-[#78716A] dark:text-[#A8A199] leading-relaxed">
+                แตะจุด 3 จุด <strong>[ ⋮ ]</strong> มุมขวาบน &gt; เลือก <strong>"ติดตั้งแอป" (Install app)</strong> หรือเปิดผ่านไอคอนบนหน้าจอโฮม หรือกดปุ่ม ⛶ ที่แถบหัวข้อเพื่อซ่อนแถบเบราว์เซอร์ทันที
+              </p>
+            </div>
           </div>
         </div>
 
